@@ -16,6 +16,7 @@
 
 const Template = require('../lib/template');
 const Clause = require('../lib/clause');
+const ParserManager = require('../lib/parsermanager');
 
 const chai = require('chai');
 const fs = require('fs');
@@ -301,7 +302,7 @@ describe('Clause', () => {
             const clause = new Clause(template);
             clause.parse(testLatePenaltyPeriodInput);
             const nl = clause.generateText();
-            nl.should.equal(testLatePenaltyPeriodInput);
+            nl.should.equal(ParserManager.normalizeWhitespace(testLatePenaltyPeriodInput));
         });
 
         it('should be able to roundtrip conga natural language text', async function() {

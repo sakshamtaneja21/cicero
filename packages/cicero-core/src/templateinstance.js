@@ -18,6 +18,7 @@ const Logger = require('@accordproject/ergo-compiler').Logger;
 const ParseException = require('@accordproject/ergo-compiler').ComposerConcerto.ParseException;
 const crypto = require('crypto');
 const ErrorUtil = require('./errorutil');
+const ParserManager = require('./parsermanager');
 const Util = require('@accordproject/ergo-compiler').Util;
 const moment = require('moment-mini');
 // Make sure Moment serialization preserves utcOffset. See https://momentjs.com/docs/#/displaying/as-json/
@@ -107,7 +108,8 @@ class TemplateInstance {
 
         let parser = this.getTemplate().getParserManager().getParser();
         try {
-            parser.feed(text);
+            const normalized = ParserManager.normalizeWhitespace(text);
+            parser.feed(normalized);
         } catch(err) {
             const fileLocation = ErrorUtil.locationOfError(err);
             throw new ParseException(err.message, fileLocation, fileName, err.message, 'cicero-core');

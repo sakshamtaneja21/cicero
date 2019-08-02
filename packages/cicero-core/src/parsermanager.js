@@ -29,6 +29,15 @@ const uuid = require('uuid');
 const nunjucks = require('nunjucks');
 const DateTimeFormatParser = require('./datetimeformatparser');
 
+const PluginManager = require('@accordproject/markdown-transform').PluginManager;
+const ClausePlugin = require('@accordproject/markdown-transform').ClausePlugin;
+const ListPlugin = require('@accordproject/markdown-transform').ListPlugin;
+const VariablePlugin = require('@accordproject/markdown-transform').VariablePlugin;
+const ComputedPlugin = require('@accordproject/markdown-transform').ComputedPlugin;
+const VideoPlugin = require('@accordproject/markdown-transform').VideoPlugin;
+const FromMarkdown = require('@accordproject/markdown-transform').FromMarkdown;
+const ToMarkdown = require('@accordproject/markdown-transform').ToMarkdown;
+
 // This required because only compiled nunjucks templates are supported browser-side
 // https://mozilla.github.io/nunjucks/api.html#browser-usage
 // We can't always import it in Cicero because precompiling is not supported server-side!
@@ -89,14 +98,42 @@ class ParserManager {
     }
 
     /**
+     * Normalizes the whitespace in text to be parsed
+     * @param {string} text the input text
+     * @returns {string} normalized input
+     */
+    static normalizeWhitespace(text) {
+        const plugins = [
+            new ClausePlugin(null),
+            new ListPlugin(null),
+            new VariablePlugin(null),
+            new VideoPlugin(null),
+            new ComputedPlugin(null)
+        ];
+        const pluginManager = new PluginManager(plugins);
+        const fromMarkdown = new FromMarkdown(pluginManager);
+        const toMarkdown = new ToMarkdown(pluginManager);
+
+        const slateObj = fromMarkdown.convert(text);
+        const result = toMarkdown.convert(slateObj);
+        console.log('**** INPUT');
+        console.log(text);
+        console.log('**** RESULT');
+        console.log(result);
+
+        return result;
+    }
+
+    /**
      * Build a grammar from a template
      * @param {String} templatizedGrammar  - the annotated template
      */
     buildGrammar(templatizedGrammar) {
 
-        Logger.debug('buildGrammar', templatizedGrammar);
+        const normalizedTemplatizedGrammar = ParserManager.normalizeWhitespace(templatizedGrammar);
+        Logger.debug('buildGrammar', normalizedTemplatizedGrammar);
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(templateGrammar));
-        parser.feed(templatizedGrammar);
+        parser.feed(normalizedTemplatizedGrammar);
         if (parser.results.length !== 1) {
             throw new Error('Ambiguous parse!');
         }
@@ -134,7 +171,7 @@ class ParserManager {
         Logger.debug('Generated template grammar' + combined);
 
         this.setGrammar(combined);
-        this.templatizedGrammar = templatizedGrammar;
+        this.templatizedGrammar = normalizedTemplatizedGrammar;
     }
 
     /**
